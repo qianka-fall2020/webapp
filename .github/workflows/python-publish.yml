@@ -19,7 +19,6 @@ jobs:
     - name: Install and upgrade
       run: |
         python -m pip install --upgrade pip
-        pip install unittest
     - name: Test with unit test
       run: |
         python test_app.py
