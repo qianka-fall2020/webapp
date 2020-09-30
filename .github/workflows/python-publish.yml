@@ -18,6 +18,6 @@ jobs:
         python-version: '3.x'
     - name: Install dependencies
       run: pip install --upgrade pip
-        pip install uuid flask time MySQLdb flask_httpauth bcrypt
+        pip install uuid time MySQLdb flask_httpauth bcrypt
     - name: unit test
       run: pytest
