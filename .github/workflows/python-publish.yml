@@ -19,7 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest flask uuid time MySQLdb flask_httpauth bcrypt
+        pip install pytest flask MySQLdb flask_httpauth bcrypt
     - name: Test with pytest
       run: |
         pytest
