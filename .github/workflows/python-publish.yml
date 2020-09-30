@@ -16,8 +16,8 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-    - name: Install dependencies
+    - name: pip upgrade
       run: pip install --upgrade pip
-        pip install uuid time MySQLdb flask_httpauth bcrypt
+
     - name: unit test
       run: pytest
