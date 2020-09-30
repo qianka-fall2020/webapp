@@ -5,12 +5,12 @@ from flask import jsonify
 
 import uuid
 import time
-import MySQLdb
+from mysql.connector import connection
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
 
 app = Flask(__name__)
-db  = MySQLdb.connect("localhost", "root", "root", "assign1")
+db  = connection.MySQLConnection(user='root', password='root', host='127.0.0.1', database='assign1',auth_plugin='mysql_native_password')
 MAIN_DB = db.cursor()
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
