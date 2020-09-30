@@ -7,18 +7,17 @@ import time
 import mysql.connector
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
-import re
 
-# from webapplication.password import helper
 
-def password_validator(passw):
-    if len(passw) < 9:#length >=8
-        return False
-    if not bool(re.search(r'\d', passw)):#contains digits
-        return False
-    if not bool(re.search(r'[a-zA-Z]', passw)):#conatins letters
-        return False
-    return True
+# def password_validator(passw):
+#     if len(passw) < 9:#length >=8
+#         return False
+#     if not bool(re.search(r'\d', passw)):#contains digits
+#         return False
+#     if not bool(re.search(r'[a-zA-Z]', passw)):#conatins letters
+#         return False
+#     return True
+from helper import password_validator
 
 app = Flask(__name__)
 db  = mysql.connector.connect(user='root', password='root',
