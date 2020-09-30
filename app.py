@@ -1,20 +1,32 @@
 from flask import Flask
 from flask import request
-from flask import Response
 from flask import jsonify
 
 import uuid
 import time
-from mysql.connector import connection
+import MySQLdb
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
+import re
+
+# from webapplication.password import helper
+
+def password_validator(passw):
+    if len(passw) < 9:#length >=8
+        return False
+    if not bool(re.search(r'\d', passw)):#contains digits
+        return False
+    if not bool(re.search(r'[a-zA-Z]', passw)):#conatins letters
+        return False
+    return True
 
 app = Flask(__name__)
-db  = connection.MySQLConnection(user='root', password='root', host='127.0.0.1', database='assign1',auth_plugin='mysql_native_password')
+db  = MySQLdb.connect("localhost", "root", "root", "assign1")
 MAIN_DB = db.cursor()
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
 pw = ""
+
 
 @auth.verify_password
 def verify_password(username, password):
@@ -43,15 +55,19 @@ def getuser():
 @app.route("/User", methods=["put"])
 @auth.login_required()
 def updateuser():
-    id = uuid.uuid4()
+    # id = uuid.uuid4()
     first_name = request.json['first_name']
     last_name = request.json['last_name']
     email = request.json['email']
     password = request.json['password']
+    if not password_validator(password):
+        resp = jsonify("Your password must contains numbers and length >8")
+        resp.status_code = 400
+        return resp
     password = bcrypt.hashpw(password.encode('utf8'),salt)
-    account_created = time.strftime('%Y-%m-%d %H:%M:%S')
+    # account_created = time.strftime('%Y-%m-%d %H:%M:%S')
     account_updated = time.strftime('%Y-%m-%d %H:%M:%S')
-    check = MAIN_DB.execute(
+    MAIN_DB.execute(
         "select id,first_name, last_name, email, account_created, account_updated from users where email = %s ",
         [email])
     data = MAIN_DB.fetchone()
@@ -87,6 +103,10 @@ def createuser():
     last_name = request.json['last_name']
     email = request.json['email']
     password = request.json['password']
+    if not password_validator(password):
+        resp = jsonify("Your password must contains numbers and length >8")
+        resp.status_code = 400
+        return resp
     password = bcrypt.hashpw(password.encode('utf8'),salt)
     account_created = time.strftime('%Y-%m-%d %H:%M:%S')
     account_updated = time.strftime('%Y-%m-%d %H:%M:%S')
