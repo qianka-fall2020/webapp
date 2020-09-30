@@ -1,15 +1,3 @@
-
-from flask import request
-from flask import json
-import pytest
-import requests
-# import app
-#
-#
-# def test_pass():
-#     res = app.password_validator("1234sssss")
-#     assert res == True
-
 import unittest
 import app
 
