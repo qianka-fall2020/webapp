@@ -4,7 +4,7 @@ from flask import jsonify
 
 import uuid
 import time
-import MySQLdb
+import mysql.connector
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
 import re
@@ -21,7 +21,10 @@ def password_validator(passw):
     return True
 
 app = Flask(__name__)
-db  = MySQLdb.connect("localhost", "root", "root", "assign1")
+db  = mysql.connector.connect(user='root', password='root',
+                                 host='localhost',
+                                 database='assign1',
+                                auth_plugin='mysql_native_password')
 MAIN_DB = db.cursor()
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
