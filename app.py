@@ -1,6 +1,6 @@
 import json
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields
@@ -126,6 +126,11 @@ class Category(db.Model):
         self.category_id = uuid.uuid4()
         self.category = category
 
+    def serialize(self):
+        return {"category_id": self.category_id,
+                "category": self.category
+                }
+
 
 # Category Schema
 class CategorySchema(ma.Schema):
@@ -163,7 +168,7 @@ class Question(db.Model):
                 "updated_timestamp": self.updated_timestamp,
                 "user_id": self.user_id,
                 "question_text": self.question_text,
-                "categories": self.categories,
+                "categories": self.categories.serialze(),
                 "answer": self.answers}
 
 
@@ -279,9 +284,10 @@ def getAQuestion(id):
 # get all questions
 @app.route("/Questions", methods=["get"])
 def getAllQuestions():
-    questions = Question.query.all()
-    result = question_schema.dump(questions)
-    return jsonify(result.keys())
+    questions = Question.query.order_by(Question.created_timestamp).all()
+    # for question in questions:
+        # yield question_schema.jsonify(question)
+    return question_schema.jsonify(questions[0])
 
 # Update a Question
 @app.route('/Question/<id>', methods=['put'])
@@ -325,6 +331,11 @@ def deletequestion(id):
     question = Question.query.filter_by(question_id=id).first()
     if not question:
         res = jsonify("Can't find the question")
+        res.status_code = 404
+        return res
+    answer = Answer.query.filter_by(question_id=id).first()
+    if answer:
+        res = jsonify("Can't delete this question")
         res.status_code = 404
         return res
     db.session.delete(question)
