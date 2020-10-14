@@ -1,5 +1,3 @@
-import json
-
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -7,23 +5,10 @@ from marshmallow import Schema, fields
 
 import uuid
 import time
-import MySQLdb
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
-import pickle
-from datetime import datetime
 
-# def password_validator(passw):
-#     if len(passw) < 9:#length >=8
-#         return False
-#     if not bool(re.search(r'\d', passw)):#contains digits
-#         return False
-#     if not bool(re.search(r'[a-zA-Z]', passw)):#conatins letters
-#         return False
-#     return True
 from helper import password_validator
-from sqlalchemy import JSON
-from sqlalchemy.orm import relationship, backref
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/assign1'
@@ -175,7 +160,7 @@ class Question(db.Model):
 # Question Schema
 class QuestionSchema(ma.Schema):
     class Meta:
-        fields = ('question_id', 'created_timestamp', 'updated_timestamp', 'user_id', 'question_text', 'categories')
+        fields = ('question_id', 'created_timestamp', 'updated_timestamp', 'user_id', 'question_text', 'categories','answers')
 
     categories = fields.Nested('CategorySchema', default=[], many=True)
     answers = fields.Nested('AnswerSchema', default=[], many=True)
@@ -184,7 +169,7 @@ class QuestionSchema(ma.Schema):
 # Init schema
 question_schema = QuestionSchema()
 
-# db.drop_all()
+db.drop_all()
 db.create_all()
 """
 
@@ -278,6 +263,11 @@ Question section
 @app.route("/Question/<id>", methods=["get"])
 def getAQuestion(id):
     question = Question.query.filter_by(question_id=id).first()
+    answer = Answer.query.filter_by(question_id=id).first()
+    print(answer)
+    if answer:
+        question.answers.append(answer)
+    db.session.commit()
     return question_schema.jsonify(question)
 
 
@@ -356,13 +346,20 @@ def add_question():
     question_text = request.json['question_text']
     categories = request.json['categories'][0]
     categories = categories.get('category')
+    categories = categories.lower()
     new_category = Category(categories)
-    if not Category.query.filter_by(category=categories).first():
-        db.session.commit()
+    temp = Category.query.filter_by(category=categories).first()
+    # if temp:
+    #     db.session.delete(temp)
     new_question = Question(created_timestamp, updated_timestamp, user_id, question_text)
-    new_question.categories.append(new_category)
+    if temp:
+        new_question.categories.append(temp)
+    else:
+        new_question.categories.append(new_category)
+    # new_question.answers.append(Answer(uuid.uuid4(),created_timestamp, updated_timestamp,user_id, ""))
     db.session.add(new_question)
     db.session.commit()
+
     return question_schema.jsonify(new_question)
 
 """
@@ -390,7 +387,6 @@ def delete_question(string_id, id):
 @app.route('/Question/<string_id>/answer/<id>', methods=['put'])
 @auth.login_required()
 def update_question(string_id, id):
-
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
@@ -425,6 +421,10 @@ def answer_question(string_id):
 @app.route('/Question/<string_id>/answer/<id>', methods=['get'])
 def getquestionsanswer(string_id, id):
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id).first()
+    if not answer:
+        res = jsonify("Not Found!")
+        res.status_code = 401
+        return res
     return answer_schema.jsonify(answer)
 
 
