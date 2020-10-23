@@ -26,30 +26,29 @@ ma = Marshmallow(app)
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
 pw = ""
-AWSAccessKeyId="AKIAIDLSBQZTO4H4MROA"
-AWSSecretKey="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"
 
-def upload_file(file, bucket, acl="public-read"):
+# def upload_file(file, bucket, acl="public-read"):
+# 
+#     # Upload the file
+#     s3 = boto3.client('s3',AWSAccessKeyId,AWSSecretKey)
+#     try:
+# 
+#         s3.upload_fileobj(
+#             file,
+#             bucket,
+#             file.filename,
+#             ExtraArgs={
+#                 "ACL": acl,
+#                 "ContentType": file.content_type
+#             }
+#         )
+# 
+#     except Exception as e:
+#         print("Something Happened: ", e)
+#         return e
+# 
+#     return True
 
-    # Upload the file
-    s3 = boto3.client('s3',AWSAccessKeyId,AWSSecretKey)
-    try:
-
-        s3.upload_fileobj(
-            file,
-            bucket,
-            file.filename,
-            ExtraArgs={
-                "ACL": acl,
-                "ContentType": file.content_type
-            }
-        )
-
-    except Exception as e:
-        print("Something Happened: ", e)
-        return e
-
-    return True
 
 @auth.verify_password
 def verify_password(username, password):
