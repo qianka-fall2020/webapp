@@ -7,11 +7,15 @@ import uuid
 import time
 from flask_httpauth import HTTPBasicAuth
 import bcrypt
+import logging
+import boto3
+from botocore.exceptions import ClientError
 
 from helper import password_validator
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost/assign1'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://csye6225fall2020:awsdb2020@csye6225-f20.cp6zf9yto3qh.us-east-1.rds' \
+                                        '.amazonaws.com/csye6225'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Init db
@@ -22,7 +26,30 @@ ma = Marshmallow(app)
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
 pw = ""
+AWSAccessKeyId="AKIAIDLSBQZTO4H4MROA"
+AWSSecretKey="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"
 
+def upload_file(file, bucket, acl="public-read"):
+
+    # Upload the file
+    s3 = boto3.client('s3',AWSAccessKeyId,AWSSecretKey)
+    try:
+
+        s3.upload_fileobj(
+            file,
+            bucket,
+            file.filename,
+            ExtraArgs={
+                "ACL": acl,
+                "ContentType": file.content_type
+            }
+        )
+
+    except Exception as e:
+        print("Something Happened: ", e)
+        return e
+
+    return True
 
 @auth.verify_password
 def verify_password(username, password):
@@ -71,6 +98,15 @@ questans = db.Table('questans',
                     db.Column('question', db.String(200), db.ForeignKey('question.question_id'), primary_key=True),
                     db.Column('answer', db.String(200), db.ForeignKey('answer.answer_id'), primary_key=True)
                     )
+questfil = db.Table('questfil',
+                    db.Column('question', db.String(200), db.ForeignKey('question.question_id'), primary_key=True),
+                    db.Column('file', db.String(200), db.ForeignKey('file.file_id'), primary_key=True)
+                    )
+
+answerfil = db.Table('answerfil',
+                     db.Column('answer', db.String(200), db.ForeignKey('answer.answer_id'), primary_key=True),
+                     db.Column('file', db.String(200), db.ForeignKey('file.file_id'), primary_key=True)
+                     )
 
 
 # Answer Class/Model
@@ -82,6 +118,8 @@ class Answer(db.Model):
     user_id = db.Column(db.String(200), db.ForeignKey('user.id'))
     # user = relationship("User", backref=backref("user", lazy="dynamic"))
     answer_text = db.Column(db.String(200))
+    files = db.relationship("File", secondary=answerfil,
+                            backref="answers", cascade='all, delete')
 
     def __init__(self, question_id, created_timestamp, updated_timestamp, user_id, answer_text):
         self.answer_id = uuid.uuid4()
@@ -95,11 +133,38 @@ class Answer(db.Model):
 # Answer Schema
 class AnswerSchema(ma.Schema):
     class Meta:
-        fields = ('answer_id', 'question_id', 'created_timestamp', 'updated_timestamp', 'user_id', 'answer_text')
+        fields = (
+            'answer_id', 'question_id', 'created_timestamp', 'updated_timestamp', 'user_id', 'answer_text', 'files')
+
+    files = fields.Nested('FileSchema', default=[], many=True)
 
 
 # Init schema
 answer_schema = AnswerSchema()
+
+
+# File Class/Model
+class File(db.Model):
+    file_name = db.Column(db.String(200))
+    s3_object_name = db.Column(db.String(200))
+    file_id = db.Column(db.String(200), primary_key=True)
+    created_date = db.Column(db.String(200))
+
+    def __init__(self, file_name, s3_object_name, created_date):
+        self.file_name = file_name
+        self.s3_object_name = s3_object_name
+        self.file_id = uuid.uuid4()
+        self.created_date = created_date
+
+
+# Answer Schema
+class FileSchema(ma.Schema):
+    class Meta:
+        fields = ('file_name', 's3_object_name', 'file_id', 'created_date')
+
+
+# Init schema
+file_schema = FileSchema()
 
 
 # Category Class/Model
@@ -139,6 +204,8 @@ class Question(db.Model):
                                  backref="questions", cascade='all, delete')
     answers = db.relationship("Answer", secondary=questans,
                               backref="questions", cascade='all, delete')
+    files = db.relationship("File", secondary=questfil,
+                            backref="questions", cascade='all, delete')
 
     def __init__(self, created_timestamp, updated_timestamp, user_id, question_text):
         self.question_id = uuid.uuid4()
@@ -160,16 +227,20 @@ class Question(db.Model):
 # Question Schema
 class QuestionSchema(ma.Schema):
     class Meta:
-        fields = ('question_id', 'created_timestamp', 'updated_timestamp', 'user_id', 'question_text', 'categories','answers')
+        fields = (
+            'question_id', 'created_timestamp', 'updated_timestamp', 'user_id', 'question_text', 'categories',
+            'answers',
+            'files')
 
     categories = fields.Nested('CategorySchema', default=[], many=True)
     answers = fields.Nested('AnswerSchema', default=[], many=True)
+    files = fields.Nested('FileSchema', default=[], many=True)
 
 
 # Init schema
 question_schema = QuestionSchema()
 
-db.drop_all()
+# db.drop_all()
 db.create_all()
 """
 
@@ -276,8 +347,31 @@ def getAQuestion(id):
 def getAllQuestions():
     questions = Question.query.order_by(Question.created_timestamp).all()
     # for question in questions:
-        # yield question_schema.jsonify(question)
+    # yield question_schema.jsonify(question)
     return question_schema.jsonify(questions[0])
+
+# Update a Question with a file
+@app.route('/Question/<id>/file', methods=['post'])
+@auth.login_required()
+def postfile(id):
+    f = request.files['file']
+    # if f.filename.rsplit('.', 1)[1].lower() not in
+    created_date = time.strftime('%Y-%m-%d %H:%M:%S')
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket('webapp.kai.qian')
+    my_bucket.Object(f.filename).put(Body=f)
+    new_file = File(f.filename, f.filename, created_date)
+    question = Question.query.filter_by(question_id=id).first()
+    if question:
+        question.files.append(new_file)
+        db.session.commit()
+    else:
+        res = jsonify("Not found the question")
+        res.status_code = 404
+        return res
+
+    #upload_file(f, "web.kai.qian", file_name)
+    return file_schema.jsonify(new_file)
 
 # Update a Question
 @app.route('/Question/<id>', methods=['put'])
@@ -306,6 +400,35 @@ def updatequestion(id):
     question.updated_timestamp = updated_timestamp
     db.session.commit()
     return question_schema.jsonify(question)
+
+
+# Delete a Question's file
+@app.route('/Question/<question_id>/file/<file_id>', methods=['delete'])
+@auth.login_required()
+def deletequestionfile(question_id, file_id):
+    user = User.query.filter_by(username=auth.username()).first()
+    user_id = user.id
+    temp = Question.query.filter_by(user_id=user_id).first()
+    if not temp:
+        res = jsonify("You are not authorized to update or delete this file!")
+        res.status_code = 401
+        return res
+    question = Question.query.filter_by(question_id=question_id).first()
+    if not question:
+        res = jsonify("Can't find the question")
+        res.status_code = 404
+        return res
+    file = File.query.filter_by(file_id=file_id).first()
+    if not file:
+        return jsonify("Can't find the file")
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket('webapp.kai.qian')
+    my_bucket.Object(file.file_name).delete()
+    question.files.clear()
+    db.session.delete(file)
+    db.session.commit()
+    return jsonify("file has been deleted")
+
 
 # Delete a Question
 @app.route('/Question/<id>', methods=['delete'])
@@ -362,11 +485,46 @@ def add_question():
 
     return question_schema.jsonify(new_question)
 
+
 """
 
 Answer section
 
 """
+
+
+# Delete a Answer's file
+@app.route('/Question/<question_id>/answer/<answer_id>/file/<file_id>', methods=['delete'])
+@auth.login_required()
+def deleteanswerfile(question_id, answer_id, file_id):
+    user = User.query.filter_by(username=auth.username()).first()
+    user_id = user.id
+    temp = Question.query.filter_by(user_id=user_id).first()
+    if not temp:
+        res = jsonify("You are not authorized to update or delete this file!")
+        res.status_code = 401
+        return res
+    question = Question.query.filter_by(question_id=question_id).first()
+    if not question:
+        res = jsonify("Can't find the question")
+        res.status_code = 404
+        return res
+    answer = Answer.query.filter_by(answer_id=answer_id).first()
+    if not answer:
+        res = jsonify("Can't find the answer")
+        res.status_code = 404
+        return res
+    file = File.query.filter_by(file_id=file_id).first()
+    if not file:
+        return jsonify("Can't find the file")
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket('webapp.kai.qian')
+    my_bucket.Object(file.file_name).delete()
+    question.files.clear()
+    db.session.delete(file)
+    db.session.commit()
+    return jsonify("file has been deleted")
+
 
 # delete a Answer
 @app.route('/Question/<string_id>/answer/<id>', methods=['delete'])
@@ -383,6 +541,7 @@ def delete_question(string_id, id):
     db.session.commit()
     return jsonify("question has been deleted")
 
+
 # update a Answer
 @app.route('/Question/<string_id>/answer/<id>', methods=['put'])
 @auth.login_required()
@@ -396,9 +555,32 @@ def update_question(string_id, id):
         res.status_code = 401
         return res
     answer.answer_text = request.json['answer_text']
-    answer.updated_timestamp= updated_timestamp
+    answer.updated_timestamp = updated_timestamp
     db.session.commit()
     return answer_schema.jsonify(answer)
+
+
+# Answer a Answer with file
+@app.route('/Question/<question_id>/answer/<answer_id>/file', methods=['POST'])
+@auth.login_required()
+def answer_q_withfile(question_id, answer_id):
+    f = request.files['file']
+    file_name = f.filename
+    created_date = time.strftime('%Y-%m-%d %H:%M:%S')
+    s3_resource = boto3.resource('s3')
+    my_bucket = s3_resource.Bucket('webapp.kai.qian')
+    my_bucket.Object(f.filename).put(Body=f)
+    new_file = File(file_name, file_name, created_date)
+    answer = Answer.query.filter_by(answer_id=answer_id).first()
+    if answer:
+        answer.files.append(new_file)
+        db.session.commit()
+    else:
+        res = jsonify("Not found the question")
+        res.status_code = 404
+        return res
+    return file_schema.jsonify(new_file)
+
 
 # Answer a Answer
 @app.route('/Question/<string_id>/answer', methods=['POST'])
@@ -429,4 +611,5 @@ def getquestionsanswer(string_id, id):
 
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=3000, debug=True)
+    app.run(host="0.0.0.0", port=3000, debug=True)
+
