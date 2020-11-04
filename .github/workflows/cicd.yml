@@ -46,7 +46,7 @@ jobs:
 
     - name: Copy Artifact to S3
       run: |
-        aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}} 
+       aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}} 
     - name: CodeDeploy API call
       run: |
        output=$(aws deploy create-deployment \
