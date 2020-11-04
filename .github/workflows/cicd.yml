@@ -33,38 +33,38 @@ jobs:
     - name: test
       run: python test_app.py
 	  
-        - name: Build Deployment Artifact
-	  run: |
-	    mkdir codedeploy_artifact
-	    zip -r ${{env.ARTIFACT_NAME}} webapp codedeploy/*.sh appspec.yml
-		pwd
-		ls -al
-		mv ${{env.ARTIFACT_NAME}} codedeploy_artifact/
-		ls -al
-		pwd
+    - name: Build Deployment Artifact
+      run: |
+	mkdir codedeploy_artifact
+	zip -r ${{env.ARTIFACT_NAME}} webapp codedeploy/*.sh appspec.yml
+	pwd
+	ls -al
+	mv ${{env.ARTIFACT_NAME}} codedeploy_artifact/
+	ls -al
+	pwd
 		
 
-	- name: Configure AWS credentials
-	  uses:aws-actions/configure-aws-credentials@v1
-	  with: 
-	    aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
-	    aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-		aws-region: ${{env.AWS_REGION}}
+     - name: Configure AWS credentials
+       uses:aws-actions/configure-aws-credentials@v1
+       with: 
+	 aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+	 aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+	 aws-region: ${{env.AWS_REGION}}
 		
-	- name: Copy Artifact to S3
-          run: |
-	    aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}}
+     - name: Copy Artifact to S3
+       run: |
+	 aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}}
 	
-	- name: CodeDeploy API call
-	  run: |
-	    output=$(aws deploy create-deployment \
-		  --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
-		  .....omitted....
-		  --region ${{env.AWS_REGION}} \
-		  --output json)
+     - name: CodeDeploy API call
+       run: |
+	 output=$(aws deploy create-deployment \
+	 --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
+	 .....omitted....
+	 --region ${{env.AWS_REGION}} \
+	 --output json)
 		  
-		  echo $output
+	 echo $output
 		  
-		  dId=$(echo $output | jq -r '.deploymentId')
+	 dId=$(echo $output | jq -r '.deploymentId')
 		  
-		  aws deploy wait deployment-successful --deployment-id $dId
+	 aws deploy wait deployment-successful --deployment-id $dId
