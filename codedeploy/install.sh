@@ -13,7 +13,7 @@ sudo pip3 install flask_marshmallow
 sudo pip3 install boto3
 sudo apt-get install -y python3-mysqldb
 sudo pip3 install marshmallow-sqlalchemy
-sudo apt-get install unzip
+sudo apt-get install -y unzip
 curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
 unzip awscli-bundle.zip
 sudo python3 awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
