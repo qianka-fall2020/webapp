@@ -4,7 +4,7 @@ env:
   ARTIFACT_NAME:csye6225-webapp-${{github.run_number}}.zip
   CODEDEPLOY_APPLICATION_NAME:csye6225-webapp
   CODEDEPLOY_APPLICATION_DEPLOYMENT_GROUP_NAME:csye6225-webapp-deployment
-  AWS_REGION: us-east-1
+  AWS_REGION:us-east-1
   
   
 on: 
