@@ -9,13 +9,14 @@ from flask_httpauth import HTTPBasicAuth
 import bcrypt
 import logging
 import boto3
+import os
+
 from botocore.exceptions import ClientError
 
 from helper import password_validator
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://csye6225fall2020:awsdb2020@csye6225-f20.cp6zf9yto3qh.us-east-1.rds' \
-                                        '.amazonaws.com/csye6225'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('database')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Init db
@@ -26,29 +27,6 @@ ma = Marshmallow(app)
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
 pw = ""
-
-# def upload_file(file, bucket, acl="public-read"):
-# 
-#     # Upload the file
-#     s3 = boto3.client('s3',AWSAccessKeyId,AWSSecretKey)
-#     try:
-# 
-#         s3.upload_fileobj(
-#             file,
-#             bucket,
-#             file.filename,
-#             ExtraArgs={
-#                 "ACL": acl,
-#                 "ContentType": file.content_type
-#             }
-#         )
-# 
-#     except Exception as e:
-#         print("Something Happened: ", e)
-#         return e
-# 
-#     return True
-
 
 @auth.verify_password
 def verify_password(username, password):
@@ -356,7 +334,8 @@ def postfile(id):
     f = request.files['file']
     # if f.filename.rsplit('.', 1)[1].lower() not in
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
-    s3_resource = boto3.resource('s3')
+    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
+    aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     new_file = File(f.filename, f.filename, created_date)
@@ -420,7 +399,8 @@ def deletequestionfile(question_id, file_id):
     file = File.query.filter_by(file_id=file_id).first()
     if not file:
         return jsonify("Can't find the file")
-    s3_resource = boto3.resource('s3')
+    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
+    aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     question.files.clear()
@@ -516,7 +496,8 @@ def deleteanswerfile(question_id, answer_id, file_id):
     file = File.query.filter_by(file_id=file_id).first()
     if not file:
         return jsonify("Can't find the file")
-    s3_resource = boto3.resource('s3')
+    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
+    aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     question.files.clear()
@@ -566,7 +547,8 @@ def answer_q_withfile(question_id, answer_id):
     f = request.files['file']
     file_name = f.filename
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
-    s3_resource = boto3.resource('s3')
+    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
+    aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     new_file = File(file_name, file_name, created_date)
