@@ -51,7 +51,7 @@ jobs:
       run: |
        output=$(aws deploy create-deployment \
        --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
-       .....omitted....
+       --deployment-config-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
        --region ${{env.AWS_REGION}} \
        --output json)
        echo $output
