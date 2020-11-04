@@ -49,7 +49,7 @@ jobs:
        aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}} 
     - name: CodeDeploy API call
       run: |
-       output=$(aws deploy create-deployment --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} --deployment-config-name ${{env.CODEDEPLOY_APPLICATION_NAME}} --region ${{env.AWS_REGION}} --output json)
+       output=$(aws deploy create-deployment --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} --deployment-group-name ${{env.CODEDEPLOY_APPLICATION_DEPLOYMENT_GROUP_NAME}} --region ${{env.AWS_REGION}} --output json)
        echo $output
        dId=$(echo $output | jq -r '.deploymentId')
        aws deploy wait deployment-successful --deployment-id $dId
