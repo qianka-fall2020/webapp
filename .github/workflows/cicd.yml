@@ -1,0 +1,70 @@
+name: Build & Deploy WebApp
+
+env:
+  ARTIFACT_NAME:csye6225-webapp-${{github.run_number}}.zip
+  CODEDEPLOY_APPLICATION_NAME:csye6225-webapp
+  CODEDEPLOY_APPLICATION_DEPLOYMENT_GROUP_NAME:csye6225-webapp-deployment
+  AWS_REGION: us-east-1
+  
+  
+on: 
+  push: 
+    branches:[ master ]
+
+jobs:
+  ci_cd:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install and upgrade
+      run: |
+        python -m pip install --upgrade pip
+        pip install flask mysql-connector-python flask_httpauth bcrypt
+        
+    - name: test
+      run: python test_app.py
+	  
+        - name: Build Deployment Artifact
+	  run: |
+	    mkdir codedeploy_artifact
+	    zip -r ${{env.ARTIFACT_NAME}} webapp codedeploy/*.sh appspec.yml
+		pwd
+		ls -al
+		mv ${{env.ARTIFACT_NAME}} codedeploy_artifact/
+		ls -al
+		pwd
+		
+
+	- name: Configure AWS credentials
+	  uses:aws-actions/configure-aws-credentials@v1
+	  with: 
+	    aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+	    aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+		aws-region: ${{env.AWS_REGION}}
+		
+	- name: Copy Artifact to S3
+          run: |
+	    aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}}
+	
+	- name: CodeDeploy API call
+	  run: |
+	    output=$(aws deploy create-deployment \
+		  --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} \
+		  .....omitted....
+		  --region ${{env.AWS_REGION}} \
+		  --output json)
+		  
+		  echo $output
+		  
+		  dId=$(echo $output | jq -r '.deploymentId')
+		  
+		  aws deploy wait deployment-successful --deployment-id $dId
