@@ -3,14 +3,14 @@ os: linux
 
 hooks:
   AfterInstall:
-    - location: codedeploy/install.sh
+    - location: ./codedeploy/install.sh
       timeout: 900
-      runas: root
+      runas: ubuntu
   ApplicationStart:
-    - location: codedeploy/start.sh
+    - location: ./codedeploy/start.sh
       timeout: 300
-      runas: root
+      runas: ubuntu
   ApplicationStop:
-    - location: codedeploy/end.sh
+    - location: ./codedeploy/end.sh
       timeout: 300
-      runas: root
+      runas: ubuntu
