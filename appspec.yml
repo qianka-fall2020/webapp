@@ -2,11 +2,6 @@ version: 0.0
 os: linux
 
 hooks:
-  AfterInstall:
-    - location: ./codedeploy/install.sh
-      timeout: 900
-      runas: ubuntu
   ApplicationStart:
-    - location: ./codedeploy/start.sh
-      timeout: 300
-      runas: ubuntu
+    - location: .codedeploy/end.sh
+    - location: .codedeploy/start.sh
