@@ -16,7 +16,7 @@ from botocore.exceptions import ClientError
 from helper import password_validator
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('database')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://csye6225fall2020:awsdb2020@csye6225-f20.cjtqoip7hsuk.us-east-1.rds.amazonaws.com/csye6225'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Init db
