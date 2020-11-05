@@ -8,7 +8,8 @@ env:
   
   
 on: 
- [push, pull_request]
+  push:
+    branches: [master]
 
 jobs:
   ci_cd:
@@ -34,8 +35,11 @@ jobs:
       
     - name: Build Deployment Artifact
       run: |
+         ls -al
          mkdir codedeploy_artifact
-         zip -r ${{ env.ARTIFACT_NAME }} webapp codedeploy/*.sh appspec.yml
+         ls -al
+         zip -r ${{ env.ARTIFACT_NAME }} .
+         mv ${{env.ARTIFACT_NAME}} codedeploy_artifact/
 
     - name: Configure AWS credentials 
       uses: aws-actions/configure-aws-credentials@v1
@@ -46,10 +50,11 @@ jobs:
 
     - name: Copy Artifact to S3
       run: |
-       aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}} 
+       aws s3 sync ./codedeploy_artifact s3://${{secrets.S3_CODEDEPLOY_BUCKET}}
+        
     - name: CodeDeploy API call
       run: |
-       output=$(aws deploy create-deployment --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} --github-location repository=tkkai-1011/webapp,commitId=1a1337d8dc5924188ba09c87a2a95aeefeca9a48 --deployment-group-name ${{env.CODEDEPLOY_APPLICATION_DEPLOYMENT_GROUP_NAME}} --region ${{env.AWS_REGION}} --output json)
+       output=$(aws deploy create-deployment --application-name ${{env.CODEDEPLOY_APPLICATION_NAME}} --s3-location bucket=${{secrets.S3_CODEDEPLOY_BUCKET}},bundleType=zip,key=${{ env.ARTIFACT_NAME }} --deployment-group-name ${{env.CODEDEPLOY_APPLICATION_DEPLOYMENT_GROUP_NAME}} --region ${{env.AWS_REGION}} --output json)
        echo $output
        dId=$(echo $output | jq -r '.deploymentId')
        aws deploy wait deployment-successful --deployment-id $dId
