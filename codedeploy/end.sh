@@ -1,4 +1,4 @@
 #! /bin/bash
-kill $(pgrep -f 'python3 app.py')
+sudo kill $(pgrep -f 'python3 app.py')
 
 
