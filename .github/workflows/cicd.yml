@@ -35,7 +35,7 @@ jobs:
       
     - name: Build Deployment Artifact
       run: |
-         ls-al
+         ls -al
          mkdir codedeploy_artifact
          ls -al
          zip -r ${{ env.ARTIFACT_NAME }} .
