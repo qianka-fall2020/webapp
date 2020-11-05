@@ -35,7 +35,7 @@ jobs:
     - name: Build Deployment Artifact
       run: |
          mkdir codedeploy_artifact
-         zip -r ${{ env.ARTIFACT_NAME }} webapp codedeploy/*.sh appspec.yml
+         zip -r ${{ env.ARTIFACT_NAME }} /webapp codedeploy/*.sh appspec.yml
 
     - name: Configure AWS credentials 
       uses: aws-actions/configure-aws-credentials@v1
