@@ -10,6 +10,7 @@ import bcrypt
 import logging
 import boto3
 import os
+import statsd
 
 from botocore.exceptions import ClientError
 
@@ -23,6 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # Init ma
 ma = Marshmallow(app)
+
+std = statsd.StatsClient('0.0.0.0', 8125)
 
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
@@ -229,6 +232,7 @@ User section
 # create a User
 @app.route("/User", methods=["post"])
 def createuser():
+    std.incr('serviceCall')
     # id = uuid.uuid4()
     first_name = request.json['first_name']
     last_name = request.json['last_name']
@@ -256,6 +260,7 @@ def createuser():
 @app.route("/User", methods=["get"])
 @auth.login_required()
 def getuser():
+    std.incr('serviceCall')
     user = User.query.filter_by(username=auth.username()).first()
     return user_schema.jsonify(user)
 
@@ -263,6 +268,7 @@ def getuser():
 # get user with auth and id
 @app.route("/User/<id>", methods=["get"])
 def getuserById(id):
+    std.incr('serviceCall')
     user = User.query.filter_by(id=id).first()
     if user:
         return user_schema.jsonify(user)
@@ -276,6 +282,7 @@ def getuserById(id):
 @app.route("/User", methods=["put"])
 @auth.login_required()
 def updateuser():
+    std.incr('serviceCall')
     # id = uuid.uuid4()
     first_name = request.json['first_name']
     last_name = request.json['last_name']
@@ -310,6 +317,7 @@ Question section
 # get a question
 @app.route("/Question/<id>", methods=["get"])
 def getAQuestion(id):
+    std.incr('serviceCall')
     question = Question.query.filter_by(question_id=id).first()
     answer = Answer.query.filter_by(question_id=id).first()
     print(answer)
@@ -322,6 +330,7 @@ def getAQuestion(id):
 # get all questions
 @app.route("/Questions", methods=["get"])
 def getAllQuestions():
+    std.incr('serviceCall')
     questions = Question.query.order_by(Question.created_timestamp).all()
     # for question in questions:
     # yield question_schema.jsonify(question)
@@ -331,6 +340,7 @@ def getAllQuestions():
 @app.route('/Question/<id>/file', methods=['post'])
 @auth.login_required()
 def postfile(id):
+    std.incr('serviceCall')
     f = request.files['file']
     # if f.filename.rsplit('.', 1)[1].lower() not in
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -355,6 +365,7 @@ def postfile(id):
 @app.route('/Question/<id>', methods=['put'])
 @auth.login_required()
 def updatequestion(id):
+    std.incr('serviceCall')
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
@@ -384,6 +395,7 @@ def updatequestion(id):
 @app.route('/Question/<question_id>/file/<file_id>', methods=['delete'])
 @auth.login_required()
 def deletequestionfile(question_id, file_id):
+    std.incr('serviceCall')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
     temp = Question.query.filter_by(user_id=user_id).first()
@@ -413,6 +425,7 @@ def deletequestionfile(question_id, file_id):
 @app.route('/Question/<id>', methods=['delete'])
 @auth.login_required()
 def deletequestion(id):
+    std.incr('serviceCall')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
     temp = Question.query.filter_by(user_id=user_id).first()
@@ -441,6 +454,7 @@ def deletequestion(id):
 @app.route('/Question', methods=['POST'])
 @auth.login_required()
 def add_question():
+    std.incr('serviceCall')
     created_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     user = User.query.filter_by(username=auth.username()).first()
@@ -476,6 +490,7 @@ Answer section
 @app.route('/Question/<question_id>/answer/<answer_id>/file/<file_id>', methods=['delete'])
 @auth.login_required()
 def deleteanswerfile(question_id, answer_id, file_id):
+    std.incr('serviceCall')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
     temp = Question.query.filter_by(user_id=user_id).first()
@@ -510,6 +525,7 @@ def deleteanswerfile(question_id, answer_id, file_id):
 @app.route('/Question/<string_id>/answer/<id>', methods=['delete'])
 @auth.login_required()
 def delete_question(string_id, id):
+    std.incr('serviceCall')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id, user_id=user_id).first()
@@ -526,6 +542,7 @@ def delete_question(string_id, id):
 @app.route('/Question/<string_id>/answer/<id>', methods=['put'])
 @auth.login_required()
 def update_question(string_id, id):
+    std.incr('serviceCall')
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     user = User.query.filter_by(username=auth.username()).first()
     user_id = user.id
@@ -544,6 +561,7 @@ def update_question(string_id, id):
 @app.route('/Question/<question_id>/answer/<answer_id>/file', methods=['POST'])
 @auth.login_required()
 def answer_q_withfile(question_id, answer_id):
+    std.incr('serviceCall')
     f = request.files['file']
     file_name = f.filename
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -567,6 +585,7 @@ def answer_q_withfile(question_id, answer_id):
 @app.route('/Question/<string_id>/answer', methods=['POST'])
 @auth.login_required()
 def answer_question(string_id):
+    std.incr('serviceCall')
     created_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     user = User.query.filter_by(username=auth.username()).first()
@@ -583,6 +602,7 @@ def answer_question(string_id):
 # Get a Question's Answer
 @app.route('/Question/<string_id>/answer/<id>', methods=['get'])
 def getquestionsanswer(string_id, id):
+    std.incr('serviceCall')
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id).first()
     if not answer:
         res = jsonify("Not Found!")
