@@ -5,6 +5,8 @@ files:
    destination: /home/webapp
 
 hooks:
-  ApplicationStart:
+  AfterInstall:
     - location: ./codedeploy/start.sh
     - location: ./codedeploy/end.sh
+  ApplicationStart:
+    - location: ./codedeploy/startcloudwatch.sh
