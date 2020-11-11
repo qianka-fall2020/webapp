@@ -7,7 +7,7 @@ About the App:
 - `It's developed with Python Flask, MySQL, SQLAlchemy`
 
 API requirement:
-- All API request/response payloads should be in JSON.
+- All API request/response payloads should be in JSON
 - Unauthenticated users can query info about any other user.
 - Unauthenticated users can get all questions.
 - A authenticated user can post a question.
