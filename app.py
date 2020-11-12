@@ -239,8 +239,8 @@ logging.info('App Started')
 # create a User
 @app.route("/User", methods=["post"])
 def createuser():
-    if std.incr('serviceCall'):
-        print("servicecall print")
+    start = time.time()
+    std.incr('serviceCall')
     first_name = request.json['first_name']
     last_name = request.json['last_name']
     username = request.json['username']
@@ -248,20 +248,23 @@ def createuser():
     if not password_validator(password):
         resp = jsonify("Your password must contains numbers and length >8")
         resp.status_code = 400
-        logging.info('Password invalid')
         return resp
     password = bcrypt.hashpw(password.encode('utf8'), salt)
     account_created = time.strftime('%Y-%m-%d %H:%M:%S')
     account_updated = time.strftime('%Y-%m-%d %H:%M:%S')
+    query_time = time.time()
     user = User.query.filter_by(username=username).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     if user:
         resp = jsonify("Your email has already been registered")
         resp.status_code = 400
-        logging.info('email invalid')
         return resp
     new_user = User(first_name, last_name, username, password, account_created, account_updated)
     db.session.add(new_user)
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     logging.info('create user successfully')
     return user_schema.jsonify(new_user)
 
@@ -271,7 +274,13 @@ def createuser():
 @auth.login_required()
 def getuser():
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return user_schema.jsonify(user)
 
 
@@ -279,7 +288,13 @@ def getuser():
 @app.route("/User/<id>", methods=["get"])
 def getuserById(id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     user = User.query.filter_by(id=id).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     if user:
         return user_schema.jsonify(user)
     else:
@@ -294,6 +309,7 @@ def getuserById(id):
 def updateuser():
     std.incr('serviceCall')
     # id = uuid.uuid4()
+    start = time.time()
     first_name = request.json['first_name']
     last_name = request.json['last_name']
     username = request.json['username']
@@ -308,12 +324,17 @@ def updateuser():
         return resp
     password = bcrypt.hashpw(password.encode('utf8'), salt)
     account_updated = time.strftime('%Y-%m-%d %H:%M:%S')
+    query_time = time.time()
     user = User.query.filter_by(username=username).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user.first_name = first_name
     user.last_name = last_name
     user.password = password
     user.account_updated = account_updated
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return user_schema.jsonify(user)
 
 
@@ -328,12 +349,22 @@ Question section
 @app.route("/Question/<id>", methods=["get"])
 def getAQuestion(id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     question = Question.query.filter_by(question_id=id).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call1', qtd)
+
+    query_time1 = time.time()
     answer = Answer.query.filter_by(question_id=id).first()
-    print(answer)
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call2', qtd1)
+
     if answer:
         question.answers.append(answer)
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return question_schema.jsonify(question)
 
 
@@ -341,9 +372,13 @@ def getAQuestion(id):
 @app.route("/Questions", methods=["get"])
 def getAllQuestions():
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     questions = Question.query.order_by(Question.created_timestamp).all()
-    # for question in questions:
-    # yield question_schema.jsonify(question)
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return question_schema.jsonify(questions[0])
 
 
@@ -352,15 +387,22 @@ def getAllQuestions():
 @auth.login_required()
 def postfile(id):
     std.incr('serviceCall')
+    start = time.time()
     f = request.files['file']
     # if f.filename.rsplit('.', 1)[1].lower() not in
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
+    s3_time = time.time()
     s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
                                  aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
+    s3td = int((time.time() - s3_time) * 1000)
+    std.timing('S3 Call', s3td)
     new_file = File(f.filename, f.filename, created_date)
+    query_time = time.time()
     question = Question.query.filter_by(question_id=id).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     if question:
         question.files.append(new_file)
         db.session.commit()
@@ -369,7 +411,8 @@ def postfile(id):
         res.status_code = 404
         return res
 
-    # upload_file(f, "web.kai.qian", file_name)
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return file_schema.jsonify(new_file)
 
 
@@ -378,15 +421,26 @@ def postfile(id):
 @auth.login_required()
 def updatequestion(id):
     std.incr('serviceCall')
+    start = time.time()
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
+    query_time1 = time.time()
     temp = Question.query.filter_by(user_id=user_id).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
+
     if not temp:
         res = jsonify("You are not authorized to update or delete this question!")
         res.status_code = 401
         return res
+    query_time2 = time.time()
     question = Question.query.filter_by(question_id=id).first()
+    qtd2 = int((time.time() - query_time2) * 1000)
+    std.timing('Query Call2', qtd2)
     if not question:
         res = jsonify("Can't find the question")
         res.status_code = 404
@@ -395,11 +449,16 @@ def updatequestion(id):
     categories = request.json['categories'][0]
     categories = categories.get('category')
     new_category = Category(categories)
+    query_time3 = time.time()
     if not Category.query.filter_by(category=categories).first():
         db.session.commit()
+    qtd3 = int((time.time() - query_time3) * 1000)
+    std.timing('Query Call3', qtd3)
     question.categories.append(new_category)
     question.updated_timestamp = updated_timestamp
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return question_schema.jsonify(question)
 
 
@@ -408,28 +467,47 @@ def updatequestion(id):
 @auth.login_required()
 def deletequestionfile(question_id, file_id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
+    query_time1 = time.time()
     temp = Question.query.filter_by(user_id=user_id).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
+
     if not temp:
         res = jsonify("You are not authorized to update or delete this file!")
         res.status_code = 401
         return res
+    query_time2 = time.time()
     question = Question.query.filter_by(question_id=question_id).first()
+    qtd2 = int((time.time() - query_time2) * 1000)
+    std.timing('Query Call2', qtd2)
     if not question:
         res = jsonify("Can't find the question")
         res.status_code = 404
         return res
+    query_time3 = time.time()
     file = File.query.filter_by(file_id=file_id).first()
+    qtd3 = int((time.time() - query_time3) * 1000)
+    std.timing('Query Call3', qtd3)
     if not file:
         return jsonify("Can't find the file")
+    s3_time = time.time()
     s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
                                  aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
+    s3td = int((time.time() - s3_time) * 1000)
+    std.timing('S3 Call', s3td)
     question.files.clear()
     db.session.delete(file)
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return jsonify("file has been deleted")
 
 
@@ -438,19 +516,32 @@ def deletequestionfile(question_id, file_id):
 @auth.login_required()
 def deletequestion(id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
+    query_time1 = time.time()
     temp = Question.query.filter_by(user_id=user_id).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
     if not temp:
         res = jsonify("You are not authorized to update or delete this question!")
         res.status_code = 401
         return res
+    query_time2 = time.time()
     question = Question.query.filter_by(question_id=id).first()
+    qtd2 = int((time.time() - query_time2) * 1000)
+    std.timing('Query Call2', qtd2)
     if not question:
         res = jsonify("Can't find the question")
         res.status_code = 404
         return res
+    query_time3 = time.time()
     answer = Answer.query.filter_by(question_id=id).first()
+    qtd3 = int((time.time() - query_time3) * 1000)
+    std.timing('Query Call3', qtd3)
     if answer:
         res = jsonify("Can't delete this question")
         res.status_code = 404
@@ -459,6 +550,8 @@ def deletequestion(id):
     question.categories.clear()
     question.answers.clear()
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return jsonify("question has been deleted")
 
 
@@ -467,16 +560,23 @@ def deletequestion(id):
 @auth.login_required()
 def add_question():
     std.incr('serviceCall')
+    start = time.time()
     created_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
     question_text = request.json['question_text']
     categories = request.json['categories'][0]
     categories = categories.get('category')
     categories = categories.lower()
     new_category = Category(categories)
+    query_time1 = time.time()
     temp = Category.query.filter_by(category=categories).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
     # if temp:
     #     db.session.delete(temp)
     new_question = Question(created_timestamp, updated_timestamp, user_id, question_text)
@@ -487,7 +587,8 @@ def add_question():
     # new_question.answers.append(Answer(uuid.uuid4(),created_timestamp, updated_timestamp,user_id, ""))
     db.session.add(new_question)
     db.session.commit()
-
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return question_schema.jsonify(new_question)
 
 
@@ -503,33 +604,58 @@ Answer section
 @auth.login_required()
 def deleteanswerfile(question_id, answer_id, file_id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
+    query_time1 = time.time()
     temp = Question.query.filter_by(user_id=user_id).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
+
     if not temp:
         res = jsonify("You are not authorized to update or delete this file!")
         res.status_code = 401
         return res
+    query_time2 = time.time()
     question = Question.query.filter_by(question_id=question_id).first()
+    qtd2 = int((time.time() - query_time2) * 1000)
+    std.timing('Query Call2', qtd2)
+
     if not question:
         res = jsonify("Can't find the question")
         res.status_code = 404
         return res
+    query_time3 = time.time()
     answer = Answer.query.filter_by(answer_id=answer_id).first()
+    qtd3 = int((time.time() - query_time3) * 1000)
+    std.timing('Query Call3', qtd3)
+
     if not answer:
         res = jsonify("Can't find the answer")
         res.status_code = 404
         return res
+    query_time4 = time.time()
     file = File.query.filter_by(file_id=file_id).first()
+    qtd4 = int((time.time() - query_time4) * 1000)
+    std.timing('Query Call4', qtd4)
+
     if not file:
         return jsonify("Can't find the file")
+    s3_time = time.time()
     s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
                                  aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
+    s3td = int((time.time() - s3_time) * 1000)
+    std.timing('S3 Call', s3td)
     question.files.clear()
     db.session.delete(file)
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return jsonify("file has been deleted")
 
 
@@ -538,15 +664,25 @@ def deleteanswerfile(question_id, answer_id, file_id):
 @auth.login_required()
 def delete_question(string_id, id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
+    query_time1 = time.time()
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id, user_id=user_id).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
+
     if not answer:
         res = jsonify("You are not authorized to update or delete this answer!")
         res.status_code = 401
         return res
     db.session.delete(answer)
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return jsonify("question has been deleted")
 
 
@@ -555,10 +691,19 @@ def delete_question(string_id, id):
 @auth.login_required()
 def update_question(string_id, id):
     std.incr('serviceCall')
+    start = time.time()
+
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     user_id = user.id
+    query_time1 = time.time()
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id, user_id=user_id).first()
+    qtd1 = int((time.time() - query_time1) * 1000)
+    std.timing('Query Call1', qtd1)
+
     if not answer:
         res = jsonify("You are not authorized to update or delete this answer!")
         res.status_code = 401
@@ -566,6 +711,8 @@ def update_question(string_id, id):
     answer.answer_text = request.json['answer_text']
     answer.updated_timestamp = updated_timestamp
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return answer_schema.jsonify(answer)
 
 
@@ -574,15 +721,25 @@ def update_question(string_id, id):
 @auth.login_required()
 def answer_q_withfile(question_id, answer_id):
     std.incr('serviceCall')
+    start = time.time()
     f = request.files['file']
     file_name = f.filename
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
+
+    s3_time = time.time()
     s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
                                  aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
+    s3td = int((time.time() - s3_time) * 1000)
+    std.timing('S3 Call', s3td)
+
     new_file = File(file_name, file_name, created_date)
+    query_time = time.time()
     answer = Answer.query.filter_by(answer_id=answer_id).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
+
     if answer:
         answer.files.append(new_file)
         db.session.commit()
@@ -590,6 +747,8 @@ def answer_q_withfile(question_id, answer_id):
         res = jsonify("Not found the question")
         res.status_code = 404
         return res
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return file_schema.jsonify(new_file)
 
 
@@ -598,9 +757,14 @@ def answer_q_withfile(question_id, answer_id):
 @auth.login_required()
 def answer_question(string_id):
     std.incr('serviceCall')
+    start = time.time()
     created_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
     updated_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    query_time = time.time()
     user = User.query.filter_by(username=auth.username()).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
+
     user_id = user.id
     answer_text = request.json['answer_text']
 
@@ -608,6 +772,8 @@ def answer_question(string_id):
 
     db.session.add(new_answer)
     db.session.commit()
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return answer_schema.jsonify(new_answer)
 
 
@@ -615,11 +781,17 @@ def answer_question(string_id):
 @app.route('/Question/<string_id>/answer/<id>', methods=['get'])
 def getquestionsanswer(string_id, id):
     std.incr('serviceCall')
+    start = time.time()
+    query_time = time.time()
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id).first()
+    qtd = int((time.time() - query_time) * 1000)
+    std.timing('Query Call', qtd)
     if not answer:
         res = jsonify("Not Found!")
         res.status_code = 401
         return res
+    dt = int((time.time() - start) * 1000)
+    std.timing('API Call', dt)
     return answer_schema.jsonify(answer)
 
 
