@@ -18,7 +18,8 @@ from botocore.exceptions import ClientError
 from helper import password_validator
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://csye6225fall2020:awsdb2020@csye6225-f20.cjtqoip7hsuk.us-east-1.rds.amazonaws.com/csye6225'
+app.config[
+    'SQLALCHEMY_DATABASE_URI'] = 'mysql://csye6225fall2020:awsdb2020@csye6225-f20.cjtqoip7hsuk.us-east-1.rds.amazonaws.com/csye6225'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Init db
@@ -26,7 +27,7 @@ db = SQLAlchemy(app)
 # Init ma
 ma = Marshmallow(app)
 
-std = statsd.StatsClient('0.0.0.0', 8125)
+std = statsd.StatsClient('localhost', 8125)
 logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s',
                     datefmt='%m-%d %H:%M',
                     filename='/opt/myapp.log',
@@ -34,6 +35,7 @@ logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s',
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
 pw = ""
+
 
 @auth.verify_password
 def verify_password(username, password):
@@ -233,11 +235,12 @@ User section
 """
 logging.info('App Started')
 
+
 # create a User
 @app.route("/User", methods=["post"])
 def createuser():
     std.incr('serviceCall')
-    # id = uuid.uuid4()
+    print("servicecall print")
     first_name = request.json['first_name']
     last_name = request.json['last_name']
     username = request.json['username']
@@ -245,7 +248,7 @@ def createuser():
     if not password_validator(password):
         resp = jsonify("Your password must contains numbers and length >8")
         resp.status_code = 400
-	logging.info('Password invalid')
+        logging.info('Password invalid')
         return resp
     password = bcrypt.hashpw(password.encode('utf8'), salt)
     account_created = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -254,7 +257,7 @@ def createuser():
     if user:
         resp = jsonify("Your email has already been registered")
         resp.status_code = 400
-	logging.info('email invalid')
+        logging.info('email invalid')
         return resp
     new_user = User(first_name, last_name, username, password, account_created, account_updated)
     db.session.add(new_user)
@@ -343,6 +346,7 @@ def getAllQuestions():
     # yield question_schema.jsonify(question)
     return question_schema.jsonify(questions[0])
 
+
 # Update a Question with a file
 @app.route('/Question/<id>/file', methods=['post'])
 @auth.login_required()
@@ -351,8 +355,8 @@ def postfile(id):
     f = request.files['file']
     # if f.filename.rsplit('.', 1)[1].lower() not in
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
-    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
-    aws_secret_access_key=os.getenv('secrete_key'))
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
+                                 aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     new_file = File(f.filename, f.filename, created_date)
@@ -365,8 +369,9 @@ def postfile(id):
         res.status_code = 404
         return res
 
-    #upload_file(f, "web.kai.qian", file_name)
+    # upload_file(f, "web.kai.qian", file_name)
     return file_schema.jsonify(new_file)
+
 
 # Update a Question
 @app.route('/Question/<id>', methods=['put'])
@@ -418,8 +423,8 @@ def deletequestionfile(question_id, file_id):
     file = File.query.filter_by(file_id=file_id).first()
     if not file:
         return jsonify("Can't find the file")
-    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
-    aws_secret_access_key=os.getenv('secrete_key'))
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
+                                 aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     question.files.clear()
@@ -518,8 +523,8 @@ def deleteanswerfile(question_id, answer_id, file_id):
     file = File.query.filter_by(file_id=file_id).first()
     if not file:
         return jsonify("Can't find the file")
-    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
-    aws_secret_access_key=os.getenv('secrete_key'))
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
+                                 aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     question.files.clear()
@@ -572,8 +577,8 @@ def answer_q_withfile(question_id, answer_id):
     f = request.files['file']
     file_name = f.filename
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
-    s3_resource = boto3.resource('s3',aws_access_key_id=os.getenv('access_key'),
-    aws_secret_access_key=os.getenv('secrete_key'))
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('access_key'),
+                                 aws_secret_access_key=os.getenv('secrete_key'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     new_file = File(file_name, file_name, created_date)
