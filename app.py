@@ -27,7 +27,8 @@ db = SQLAlchemy(app)
 # Init ma
 ma = Marshmallow(app)
 
-std = statsd.StatsClient('localhost', 8125)
+statsd.Connection.set_defaults(host='localhost', port=8125, sample_rate=1, disabled=False)
+counter = statsd.Counter('count')
 logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s',
                     datefmt='%m-%d %H:%M',
                     filename='/opt/myapp.log',
@@ -239,7 +240,7 @@ logging.info('App Started')
 # create a User
 @app.route("/User", methods=["post"])
 def createuser():
-    std.incr('serviceCall')
+    counter+=1
     print("servicecall print")
     first_name = request.json['first_name']
     last_name = request.json['last_name']
