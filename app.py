@@ -11,6 +11,7 @@ import logging
 import boto3
 import os
 import statsd
+import logging
 
 from botocore.exceptions import ClientError
 
@@ -26,7 +27,10 @@ db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
 std = statsd.StatsClient('0.0.0.0', 8125)
-
+logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename='/opt/myapp.log',
+                    filemode='w')
 auth = HTTPBasicAuth()
 salt = bcrypt.gensalt()
 pw = ""
@@ -227,7 +231,7 @@ db.create_all()
 User section
 
 """
-
+logging.info('App Started')
 
 # create a User
 @app.route("/User", methods=["post"])
@@ -241,6 +245,7 @@ def createuser():
     if not password_validator(password):
         resp = jsonify("Your password must contains numbers and length >8")
         resp.status_code = 400
+	logging.info('Password invalid')
         return resp
     password = bcrypt.hashpw(password.encode('utf8'), salt)
     account_created = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -249,10 +254,12 @@ def createuser():
     if user:
         resp = jsonify("Your email has already been registered")
         resp.status_code = 400
+	logging.info('email invalid')
         return resp
     new_user = User(first_name, last_name, username, password, account_created, account_updated)
     db.session.add(new_user)
     db.session.commit()
+    logging.info('create user successfully')
     return user_schema.jsonify(new_user)
 
 
