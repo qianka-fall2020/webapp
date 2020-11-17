@@ -392,8 +392,8 @@ def postfile(id):
     # if f.filename.rsplit('.', 1)[1].lower() not in
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAIO7OKSTYR3KR5NWA",
+                                 aws_secret_access_key="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")
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     s3td = int((time.time() - s3_time) * 1000)
@@ -497,8 +497,8 @@ def deletequestionfile(question_id, file_id):
     if not file:
         return jsonify("Can't find the file")
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAIO7OKSTYR3KR5NWA",
+                                 aws_secret_access_key="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")
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     s3td = int((time.time() - s3_time) * 1000)
@@ -645,8 +645,8 @@ def deleteanswerfile(question_id, answer_id, file_id):
     if not file:
         return jsonify("Can't find the file")
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAIO7OKSTYR3KR5NWA",
+                                 aws_secret_access_key="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")
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     s3td = int((time.time() - s3_time) * 1000)
@@ -727,8 +727,8 @@ def answer_q_withfile(question_id, answer_id):
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
 
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAIO7OKSTYR3KR5NWA",
+                                 aws_secret_access_key="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")
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     s3td = int((time.time() - s3_time) * 1000)
