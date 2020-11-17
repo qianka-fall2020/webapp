@@ -19,14 +19,13 @@ from helper import password_validator
 
 app = Flask(__name__)
 app.config[
-    'SQLALCHEMY_DATABASE_URI'] = 'mysql://csye6225fall2020:awsdb2020@csye6225-f20.cjtqoip7hsuk.us-east-1.rds.amazonaws.com/csye6225'
+    'SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Init db
 db = SQLAlchemy(app)
 # Init ma
 ma = Marshmallow(app)
-
 std = statsd.StatsClient('localhost', 8125)
 logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s',
                     datefmt='%m-%d %H:%M',
@@ -392,8 +391,8 @@ def postfile(id):
     # if f.filename.rsplit('.', 1)[1].lower() not in
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('ACCESS_KEY'),
+                                 aws_secret_access_key=os.getenv('SECRETE_KEY'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     s3td = int((time.time() - s3_time) * 1000)
@@ -497,8 +496,8 @@ def deletequestionfile(question_id, file_id):
     if not file:
         return jsonify("Can't find the file")
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('ACCESS_KEY'),
+                                 aws_secret_access_key=os.getenv('SECRETE_KEY'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     s3td = int((time.time() - s3_time) * 1000)
@@ -645,8 +644,8 @@ def deleteanswerfile(question_id, answer_id, file_id):
     if not file:
         return jsonify("Can't find the file")
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('ACCESS_KEY'),
+                                 aws_secret_access_key=os.getenv('SECRETE_KEY'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(file.file_name).delete()
     s3td = int((time.time() - s3_time) * 1000)
@@ -727,8 +726,8 @@ def answer_q_withfile(question_id, answer_id):
     created_date = time.strftime('%Y-%m-%d %H:%M:%S')
 
     s3_time = time.time()
-    s3_resource = boto3.resource('s3', aws_access_key_id="AKIAJSY4R3QQRZXC6CWQ",
-                                 aws_secret_access_key="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")
+    s3_resource = boto3.resource('s3', aws_access_key_id=os.getenv('ACCESS_KEY'),
+                                 aws_secret_access_key=os.getenv('SECRETE_KEY'))
     my_bucket = s3_resource.Bucket('webapp.kai.qian')
     my_bucket.Object(f.filename).put(Body=f)
     s3td = int((time.time() - s3_time) * 1000)
