@@ -235,7 +235,13 @@ db.create_all()
 User section
 
 """
-logging.info('App Started')
+
+@app.route("/", methods=["get"])
+def getuser():
+    std.incr('serviceCall')
+    res = jsonify("it's working")
+    res.status_code = 200
+    return res
 
 
 # create a User
