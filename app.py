@@ -237,7 +237,7 @@ User section
 """
 
 @app.route("/", methods=["get"])
-def getuser():
+def default():
     std.incr('serviceCall')
     res = jsonify("it's working")
     res.status_code = 200
