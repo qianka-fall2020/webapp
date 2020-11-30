@@ -1,9 +1,5 @@
 # webapp
 
-
-
-
-
 ----
 About the App:
 
