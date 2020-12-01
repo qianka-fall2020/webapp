@@ -682,7 +682,7 @@ def delete_question(string_id, id):
     answer = Answer.query.filter_by(question_id=string_id, answer_id=id, user_id=user_id).first()
     qtd1 = int((time.time() - query_time1) * 1000)
     std.timing('Query Call1', qtd1)
-    sns = boto3.client('sns')
+    sns = boto3.client('sns', region_name='us-east-1')
     # sns_message = "Question id:" + string_id + " is Answered" + "\n\n Answer context:" + "\n" + answer_text
     # sns.publish(
     #     TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
@@ -735,7 +735,7 @@ def update_question(string_id, id):
         return res
     answer.answer_text = request.json['answer_text']
     answer.updated_timestamp = updated_timestamp
-    sns = boto3.client('sns')
+    sns = boto3.client('sns',region_name='us-east-1')
 
     question_link = 'https://prod.kqlittleapp.coom/Question/'+ string_id +'/answer/' + id
     response = sns.publish(
@@ -805,8 +805,7 @@ def answer_question(string_id):
 
     user_id = user.id
     answer_text = request.json['answer_text']
-    sns = boto3.client('sns')
-    sns = boto3.client('sns')
+    sns = boto3.client('sns',region_name='us-east-1')
 
     question_link = 'https://prod.kqlittleapp.coom/Question/'+ string_id +'/answer/'
     new_answer = Answer(string_id, created_timestamp, updated_timestamp, user_id, answer_text)
