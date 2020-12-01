@@ -684,7 +684,7 @@ def delete_question(string_id, id):
     std.timing('Query Call1', qtd1)
     sns = boto3.client('sns', region_name='us-east-1')
 
-    question_link = 'https://prod.kqlittleapp.com/Question/'+ string_id +'/answer/' + id
+    question_link = 'http://prod.kqlittleapp.com/Question/'+ string_id +'/answer/' + id
     response = sns.publish(
         TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
         Message="recipient={}, question_id={}, answer_id={}, answer_text={}, link={}".format(
@@ -732,7 +732,7 @@ def update_question(string_id, id):
     answer.updated_timestamp = updated_timestamp
     sns = boto3.client('sns',region_name='us-east-1')
 
-    question_link = 'https://prod.kqlittleapp.com/Question/'+ string_id +'/answer/' + id
+    question_link = 'http://prod.kqlittleapp.com/Question/'+ string_id +'/answer/' + id
     response = sns.publish(
         TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
         Message="recipient={}, question_id={}, answer_id={}, answer_text={}, link={}".format(
@@ -804,7 +804,7 @@ def answer_question(string_id):
 
 
     new_answer = Answer(string_id, created_timestamp, updated_timestamp, user_id, answer_text)
-    question_link = 'https://prod.kqlittleapp.com/Question/'+ string_id +'/answer/'+ str(new_answer.answer_id)
+    question_link = 'http://prod.kqlittleapp.com/Question/'+ string_id +'/answer/'+ str(new_answer.answer_id)
     response = sns.publish(
         TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
         Message="recipient={}, question_id={}, answer_id={}, answer_text={}, link={}".format(
