@@ -683,10 +683,21 @@ def delete_question(string_id, id):
     qtd1 = int((time.time() - query_time1) * 1000)
     std.timing('Query Call1', qtd1)
     sns = boto3.client('sns')
-    sns_message = "Answer id:" + id +" is Deleted"+"\n\n Answer context:" +"\n"+answer.answer_text
-    sns.publish(
+    # sns_message = "Question id:" + string_id + " is Answered" + "\n\n Answer context:" + "\n" + answer_text
+    # sns.publish(
+    #     TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
+    #     Message=sns_message,
+    # )
+
+    question_link = 'https://prod.kqlittleapp.coom/Question/'+ string_id +'/answer/' + id
+    response = sns.publish(
         TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
-        Message=sns_message,
+        Message="recipient={}, question_id={}, answer_id={}, answer_text={}, link={}".format(
+            auth.username(),
+            str(string_id),
+            str(answer.answer_id),
+            answer.answer_text,
+            question_link)
     )
     if not answer:
         res = jsonify("You are not authorized to update or delete this answer!")
@@ -725,10 +736,16 @@ def update_question(string_id, id):
     answer.answer_text = request.json['answer_text']
     answer.updated_timestamp = updated_timestamp
     sns = boto3.client('sns')
-    sns_message = "Answer id:" + id +" is Updated"+"\n\n Answer context:" +"\n"+answer.answer_text
-    sns.publish(
+
+    question_link = 'https://prod.kqlittleapp.coom/Question/'+ string_id +'/answer/' + id
+    response = sns.publish(
         TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
-        Message=sns_message,
+        Message="recipient={}, question_id={}, answer_id={}, answer_text={}, link={}".format(
+            auth.username(),
+            str(string_id),
+            str(answer.answer_id),
+            answer.answer_text,
+            question_link)
     )
     db.session.commit()
     dt = int((time.time() - start) * 1000)
@@ -760,12 +777,7 @@ def answer_q_withfile(question_id, answer_id):
     answer = Answer.query.filter_by(answer_id=answer_id).first()
     qtd = int((time.time() - query_time) * 1000)
     std.timing('Query Call', qtd)
-    sns = boto3.client('sns')
-    sns_message = "Answer id:" + answer_id + " is Updated with new file" + "\n\n Answer context:" + "\n" + answer.answer_text
-    sns.publish(
-        TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
-        Message=sns_message,
-    )
+
     if answer:
         answer.files.append(new_file)
         db.session.commit()
@@ -794,13 +806,19 @@ def answer_question(string_id):
     user_id = user.id
     answer_text = request.json['answer_text']
     sns = boto3.client('sns')
-    sns_message = "Question id:" + string_id +" is Answered"+ "\n\n Answer context:" + "\n" +answer_text
-    sns.publish(
-        TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
-        Message=sns_message,
-    )
-    new_answer = Answer(string_id, created_timestamp, updated_timestamp, user_id, answer_text)
+    sns = boto3.client('sns')
 
+    question_link = 'https://prod.kqlittleapp.coom/Question/'+ string_id +'/answer/'
+    new_answer = Answer(string_id, created_timestamp, updated_timestamp, user_id, answer_text)
+    response = sns.publish(
+        TopicArn='arn:aws:sns:us-east-1:516274383141:SNS_Topic',
+        Message="recipient={}, question_id={}, answer_id={}, answer_text={}, link={}".format(
+            auth.username(),
+            str(string_id),
+            str(new_answer.answer_id),
+            answer_text,
+            question_link)
+    )
     db.session.add(new_answer)
     db.session.commit()
 
